@@ -16,24 +16,21 @@ jobs:
     - name: Install build dependencies
       run: sudo apt-get update && sudo apt-get install -y build-essential
 
-    - name: Clone Boost repository
-      run: git clone --depth 1 --branch develop https://github.com/boostorg/boost.git
-
-    - name: Build Boost headers
-      working-directory: ./boost
+    - name: Download latest boost
       run: |
-        ./bootstrap.sh
-        ./b2 headers
+        wget -O boost.tar.gz https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz
+        tar -xzf boost.tar.gz
 
-    - name: Copy headers to root
+    - name: Apply patch from commit https://github.com/boostorg/qvm/commit/106d411db30d44966d2db5397508d01ce170e17d
       run: |
-        mkdir -p boost/include
-        cp -r boost/boost boost/include/
+        wget -O new_quat_traits.hpp https://raw.githubusercontent.com/boostorg/qvm/develop/include/boost/qvm/quat_traits.hpp
+        cp new_quat_traits.hpp boost_1_86_0/boost/qvm/quat_traits.hpp
+        rm new_quat_traits.hpp
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add boost/include
+        git add -f boost_1_86_0
         git commit -m "Update Boost headers" || echo "No changes to commit"
         git push
