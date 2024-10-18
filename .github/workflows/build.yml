@@ -1,0 +1,39 @@
+name: Build Boost Headers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays at 00:00 UTC
+
+jobs:
+  build-and-commit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install build dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential
+
+    - name: Clone Boost repository
+      run: git clone --depth 1 --branch develop https://github.com/boostorg/boost.git
+
+    - name: Build Boost headers
+      working-directory: ./boost
+      run: |
+        ./bootstrap.sh
+        ./b2 headers
+
+    - name: Copy headers to root
+      run: |
+        mkdir -p boost/include
+        cp -r boost/boost boost/include/
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add boost/include
+        git commit -m "Update Boost headers" || echo "No changes to commit"
+        git push
